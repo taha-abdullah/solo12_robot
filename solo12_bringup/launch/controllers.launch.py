@@ -1,8 +1,10 @@
 from launch import LaunchDescription
 from launch.actions import OpaqueFunction, DeclareLaunchArgument
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, Command
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
+from launch_ros.descriptions import ParameterValue
+
 
 def launch_args(context):
 
@@ -27,15 +29,38 @@ def launch_setup(context):
             "solo12_controllers.yaml"
         ]
     )
+    
+    solo12_urdf = ParameterValue(
+        Command(
+            [
+                "xacro",
+                " ",
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("solo12_description"),
+                        "urdf",
+                        "solo12.urdf.xacro"
+                    ]
+                )
+            ]
+        ),
+        value_type=str
+    )
+    
 
     ros2_control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
         parameters=[
-            robot_controllers
+            # {'use_sim_time': LaunchConfiguration("use_sim_time")},
+            # {'robot_description': solo12_urdf},
+            {'controller_manager': robot_controllers}
         ],
-        output="both",
-        emulate_tty=True
+        output={
+            'stdout': 'screen',
+            'stderr': 'screen',
+        },
+        # emulate_tty=True
     )
 
     joint_state_broadcaster_spawner = Node(
